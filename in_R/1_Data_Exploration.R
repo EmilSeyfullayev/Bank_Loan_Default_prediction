@@ -192,11 +192,11 @@ df$purpose <-
   df$purpose %>% 
   as.factor()
 
-#15 XXXzip_code----
+#15 zip_code----
 char_names[15]
 df$zip_code %>% unique() %>% length()
 #888 unique values
-888/nrow(df)
+888/nrow(df) #0.0019% of the data
 df$zip_code[2445] 
 #by changing index seem that all have "xx" at the end
 #let's make valid our guess
@@ -205,42 +205,114 @@ grepl('xx', df$zip_code, fixed = T) %>%
   sum() %>% 
   .[1]/nrow(df) # =1, means that all zip codes have "xx"
 
+#But it soeas not mean that all have it in the end
+#How to check it
+#we can use sql language 'like' operator (I simply know it)
+
+library(sqldf)
+sqldf("SELECT zip_code 
+      FROM df 
+      WHERE zip_code like '___xx'") -> sql_zipcode
+
+nrow(sql_zipcode)/nrow(df) # =1, which means all have "___xx" pattern
+
 #lets remove them and see distribution of zipcodes
+
 gsub("xx",
      "",
-     df$zip_code) %>% 
-  as.numeric() %>% 
+     df$zip_code) -> df$zip_code 
+
+df$zip_code %>% class()  #character
+
+
+df %>% 
+  ggplot(aes(zip_code %>% as.numeric()))+
+  geom_histogram(color='black', fill='red', bins = 60)+
+  scale_x_continuous(breaks = seq(0,1000,50))+
+  theme_bw() 
+#Here we treat zipcode as a continous variable
+#But let's treat it as factor
+  
+df$zip_code %>% 
   table() %>% 
   as.data.frame() %>% 
-  arrange(Freq %>% desc()) ->zip_code
+  arrange(Freq %>% desc()) -> zip_code
   
 
 zip_code %>% glimpse() 
 # "." is factorial #they are zip code names
 zip_code %>% 
-  rename(ZC_name='.') -> zip_code
+  rename(name='.') -> zip_code
 
-zip_code$ZC_name <- zip_code$ZC_name %>% 
-  as.character() %>% 
-  as.numeric()
+zip_code %>%
+  head(200) %>% 
+  ggplot(aes(name, Freq))+
+  geom_bar(color='black',
+           fill='red',
+           stat = 'identity')+
+  theme_bw()
+#if fully seen (not head of first 200) we cannot see anthg
+#generally, histogram is more useful even if 
+#factor variable is seen as a continous
 
-zip_code %>% glimpse()
+#We can make three classes of it by putting tresholds
+#let's see distribution of counts in order to set tresholds
 
 zip_code %>% 
   ggplot(aes(Freq))+
-  geom_histogram(color='black',
-                 fill='red')+
+  geom_histogram(color='black', fill='red')+
+  scale_x_continuous(breaks = seq(0,6000, 250))+
   theme_bw()
 
-df %>% 
-  ggplot(aes(zip_code))+
-  geom_bar(color='black',
-                 fill='red')
-#Frequence of most of them is same
-#We can make three classes of it by putting tresholds
+#based on distribution of counts of unique zipcodes
+#we created 7 classes
+
+l <- c()
+
+for (i in zip_code$Freq){
+  if (i<250){
+    l <- append(l, 1)
+  }
+  else if(i<500){
+    l <- append(l, 2)
+  }
+  else if(i<750){
+    l <- append(l, 3)
+  }
+  else if(i<1000){
+    l <- append(l, 4)
+  }
+  else if(i<1750){
+    l <- append(l,5)
+  }
+  else if(i<2500){
+    l <- append(l,6)
+  }else{
+    l <- append(l,7)
+  }
+}
+
+zip_code$class <- l
+
 zip_code %>% head()
 
-chpoint_2 <- df
+#let's now make classification for entire data set's zipcodes
+#Transform factor to numeric then to character
+zip_code$name <- zip_code$name %>% 
+  as.numeric() %>% 
+  as.character()
+
+#we can merge datasets
+#first of all let's create checkpoint
+chpoint3 <- df
+
+merge(df, zip_code,
+      by.x = 'zip_code',
+      by.y = 'name') %>% 
+  select(-Freq, -zip_code) %>% 
+  rename(zip_class=class) -> df
+
+df$zip_class <- df$zip_class %>% as.factor()
 
 #16 addr_state----
 char_names[16]
