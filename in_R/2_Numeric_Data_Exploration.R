@@ -210,7 +210,7 @@ ifelse(
 ) -> df$tot_coll_amt
 
 chpoint_8 <- df
-
+df <- chpoint_8
 #2 tot_cur_bal----
 num_having_missing[2]
 df[,"tot_cur_bal"] %>% inspect_na() #15% missing
@@ -241,7 +241,6 @@ low_fence <-
 #since min value is 0, 
 #we will not reassign lower fence outliers
 
-library(graphics)
 
 outliers <-  boxplot(df$tot_cur_bal)$out
 outliers %>% length()
@@ -395,8 +394,9 @@ boxplot(df$total_rev_hi_lim)$out -> outliers
 
 min(df$total_rev_hi_lim, na.rm = T) # 0
 
-# chpoint_9 <- df
+chpoint_9 <- df
 df <- chpoint_9
+
 
 up_fence <- 
   quantile(df$total_rev_hi_lim,0.75, na.rm = T)+
@@ -598,5 +598,5 @@ df$collections_12_mths_ex_med <-
 df[,"collections_12_mths_ex_med"] %>% 
   inspect_na() #Great
 
-#chpoint_10 <- df
+chpoint_10 <- df
 df <- chpoint_10

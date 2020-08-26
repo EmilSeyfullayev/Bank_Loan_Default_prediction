@@ -5,8 +5,10 @@ library(inspectdf)
 df <- fread('loan_data_2007_2014.csv',
             na.strings = c(NA, ""))
 #read NA and "" as strings
-df %>% select(-V1) -> df
-
+df$V1 %>% unique() %>% length()
+df %>% 
+  rename(ID = V1) -> df
+df$ID <- as.factor(df$ID)
 #1 Missing values Exploration ------ 
 #Let's check what are the percentage of missing values
 df %>% 
@@ -141,6 +143,7 @@ df$emp_length %>% parse_number()
 
 #let's create checkpoint for now
 chpoint_1 <- df
+df <- chpoint_1
 df[df$emp_length=="< 1 year", "emp_length"] <- 0
 df$emp_length %>% unique() #great
 df$emp_length %>% parse_number() %>% unique() #great
@@ -218,6 +221,7 @@ df$loan_status %>% unique()
 #We have separate them into two
 #Let's make chpoint
 chpoint_2 <- df
+df <- chpoint_2
 
 # will be encoded as 1 who 
 # Fully Paid, Current, In grace period
@@ -315,8 +319,10 @@ grepl('xx', df$zip_code, fixed = T) %>%
 #we can use sql language 'like' operator (I simply know it)
 
 library(sqldf)
+df1 <- df %>% select(-ID)
+
 sqldf("SELECT zip_code 
-      FROM df 
+      FROM df1 
       WHERE zip_code like '___xx'") -> sql_zipcode
 
 nrow(sql_zipcode)/nrow(df) # =1, which means all have "___xx" pattern
@@ -409,18 +415,18 @@ zip_code %>% head()
 #let's now make classification for entire data set's zipcodes
 #Transform factor to numeric then to character
 zip_code$name <- zip_code$name %>% 
-  as.numeric() %>% 
-  as.character()
+  as.factor()
 
 zip_code %>% glimpse()
 #we can merge datasets
 #first of all let's create checkpoint
 chpoint_3 <- df
+df <- chpoint_3
 #also dont forget to make them as factors,
 #otherwise leftjon will work very slowly on joining
 
-df$zip_code <- df$zip_code %>% as.factor()
-zip_code$name <- zip_code$name %>% as.factor()
+df$zip_code <- df$zip_code %>% 
+  as.factor()
 
 df %>% 
   left_join(zip_code,
@@ -434,6 +440,7 @@ df_zip %>%
 df <- df_zip
 df[, "zip_class"] %>% glimpse() #double >>factor
 df$zip_class <- df$zip_class %>% as.factor()
+df[, "zip_class"] %>% inspect_na()
 
 #16 addr_state----
 char_names[16]
@@ -455,6 +462,7 @@ paste0("01-", df$earliest_cr_line) %>%
   as.Date("%d-%b-%y") %>% is.na() %>% sum() #29 NAs
 
 chpoint_4 <- df
+df <- chpoint_4
 
 df[, "earliest_cr_line"] <- 
   paste0("01-", df$earliest_cr_line) %>% 
@@ -465,7 +473,7 @@ df[, "earliest_cr_line"] %>% glimpse() #date format
 #let's check nulls
 df[is.na(df$earliest_cr_line), "earliest_cr_line"] #29 NAs
 #It is quite hard to predict date, 
-#we have to simply drop them
+#we have to simply drop 29 observations
 
 df[!is.na(df$earliest_cr_line),] -> df
 
@@ -497,13 +505,15 @@ time_diff %>% class() #numeric
 #convert to difference in months
 round(time_diff/30, 0) -> time_diff
 chpoint_5 <- df #checkpoint
+df <- chpoint_5
 df$earliest_cr_line <- time_diff
 
 df[,"earliest_cr_line"] %>% glimpse()
 df[,"earliest_cr_line"] %>% inspect_na() #great
 
 df %>% 
-  rename(Months_past_first_cr=earliest_cr_line)->df
+  rename(Months_past_first_cr=
+           earliest_cr_line)->df
 #18 Initial_list_status------
 char_names[18]
 df$initial_list_status %>% unique() %>% length()
@@ -548,7 +558,7 @@ df %>%
   select(-application_type) -> df
 
 chpoint_6 <- df
-
+df <- chpoint_6
 df %>% 
   select_if(is.logical) %>%
   .[complete.cases(.),] # no datatable to show
@@ -562,7 +572,6 @@ df %>%
 df %>% 
   select(-log_names) -> df
 
-chpoint_7 <- df
 write.csv(df, "df.csv")
 
 
