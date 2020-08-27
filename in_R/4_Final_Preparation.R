@@ -133,3 +133,184 @@ df <- df[
 ]
 
 df %>% inspect_na() #Great
+
+#if we look at some numberic variables
+#they have zeros a lot
+#rest of values are in minority
+#let's see which are those variables
+
+df %>% 
+  names() -> num_names
+
+l <- c()
+
+for (i in num_names){
+  l <- append(l,
+    df[df[[i]]==0,] %>% nrow()
+  )
+}
+
+cbind(num_names, l) %>% 
+  as.data.frame() %>% 
+  arrange(desc(l %>% as.numeric())) %>%
+  filter(l %>% as.numeric()>nrow(df)*0.45) %>% #wjhich more 45%
+  .[["num_names"]] -> vars_with_zeros
+
+# num_names      l
+# 1                 delinq_2yrs 465839
+# 2                     pub_rec 465839
+# 3          total_rec_late_fee 465839
+# 4                  recoveries 465839
+# 5     collection_recovery_fee 465839
+# 6  collections_12_mths_ex_med 465839
+# 7              acc_now_delinq 465839
+# 8                tot_coll_amt 416122
+# 9              inq_last_6mths 241348
+# 10                  out_prncp 229572
+# 11              out_prncp_inv 229572
+
+
+#first 7 vars have all zeros
+#we will drop them
+
+#we will rest of variables into
+#dummies of 0 if values is zero
+#and 1 if value is non zero
+
+chpoint_15 <- df
+df <- chpoint_15
+
+df %>% 
+  select(-c(
+    vars_with_zeros[1:7]
+  )) -> df
+
+#we also have to check whether they are not 
+#numeric dummies
+
+vars_with_zeros[8:
+                  length(
+                    vars_with_zeros
+                  )]
+
+# [1] "tot_coll_amt"  
+# [2] "inq_last_6mths"
+# [3] "out_prncp"     
+# [4] "out_prncp_inv"
+
+df$tot_coll_amt %>% unique() # 0 and 1
+#it should be factor because uniques are 0 and 1
+df$tot_coll_amt <- 
+  df$tot_coll_amt %>% as.factor()
+
+df$inq_last_6mths %>% unique() 
+#uniques are 1, 2.5, 2, 0
+#we have to see distribution
+df %>% 
+  group_by(inq_last_6mths) %>% 
+  summarise(n())
+# 1            0   241348
+# 2            1   130029
+# 3            2    57748
+# 4            2.5  36714
+#we will make this variable also factor
+#because there is certain distribution
+df$inq_last_6mths <- 
+  df$inq_last_6mths %>% as.factor()
+
+#next variable
+df$out_prncp %>% unique() %>% length()
+#it has 123766 uniques
+#so change it
+
+ifelse(
+  df$out_prncp==0,
+  0,
+  1
+) -> df$out_prncp
+
+df$out_prncp <- 
+  df$out_prncp %>% as.factor()
+
+#last var
+df$out_prncp_inv %>% unique() %>% length()
+#too many uniques
+#let's do same action
+
+ifelse(
+  df$out_prncp_inv==0,
+  0,
+  1
+) -> df$out_prncp_inv
+
+df$out_prncp_inv <- 
+  df$out_prncp_inv %>% as.factor()
+
+chpoint_16 <- df
+df <- chpoint_16
+
+#now let's visually see our data
+
+df %>% select_if(is.numeric) %>% View() #great
+df %>% select_if(is.factor) %>% View() #Dates are factors
+
+#we are going to have dummy variables
+#if we have 100 unique factor vars it means 100 columns
+#So, we will have to drop them as well
+#let's see their uniques
+
+l <- c()
+
+df %>% select_if(is.factor) %>% names()-> fact
+
+for(i in fact){
+  l <- append(l,
+              df[[i]] %>% unique() %>% length())
+}
+
+cbind(fact, l) %>% 
+  as.data.frame() %>% 
+  arrange(desc(as.numeric(l)))
+
+# 2   last_credit_pull_d    103
+# 3         last_pymnt_d     98
+# 4              issue_d     91
+
+#if we are going to create dummy values
+#each variable will add columns==number of uniques
+#we could transform this data into continous
+#if we had year, but we do not have
+#so, for now we have to drop them
+
+cbind(fact, l) %>% 
+  as.data.frame() %>% 
+  arrange(desc(as.numeric(l))) %>% 
+  .[[1]] %>% 
+  .[2:4] -> date_to_drop
+
+df %>% 
+  select(-c(date_to_drop)) -> df
+
+chpoint_17 <- df
+df <- chpoint_17
+
+df %>% skimr::skim()
+#we have 16 factors and 20 numeric
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
