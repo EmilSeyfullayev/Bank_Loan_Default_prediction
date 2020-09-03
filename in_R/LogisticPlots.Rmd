@@ -1,0 +1,16 @@
+```{r}
+logistic %>%
+  sample_n(500) %>% 
+  ggplot(aes(link_score, response, 
+             color=loan_status,
+             size=5
+             ))+
+  scale_color_manual(values=c('red', 'black'))+
+  geom_point(size=2)+
+  theme_bw()
+```
+```{r}
+plot(roc(test$loan_status,
+         fitted_probailities))
+```
+
